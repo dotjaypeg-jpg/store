@@ -20,7 +20,8 @@ secrets and client data.
 | `PricingRule` | `pricing_rules` | Store → Pricing |
 | `Stockist` | `stockists` | Portfolio → Stockists |
 
-The package ships **no migrations**: the tables already exist on each site.
+The tables already exist on each site; the only migration the package ships adds
+`blanks.catalog_id` for the shared catalogue.
 
 ## Install
 
@@ -63,6 +64,22 @@ A site adds its own extras on its subclass (johngodfrey's `Stockist` adds
 | `product_categories` | `null` | `[Class::class, 'method']` returning key ⇒ label, for Pricing |
 | `image_url` | public disk | `[Class::class, 'method']` turning a stored path into a URL |
 | `navigation.*` | Store / Store / Portfolio | nav group per screen |
+| `catalog.url` / `catalog.secret` | unset | Studio's base URL + its `CATALOG_SECRET`: turns on shared blanks |
+
+## Shared blanks (Studio catalogue)
+
+Studio holds the master blanks (Catalogue -> Blanks). With `STORE_CATALOG_URL`
+and `STORE_CATALOG_SECRET` set, `store:sync-blanks` runs hourly:
+
+1. **Offer**: any local blank without a `catalog_id` is sent to Studio, which
+   adopts a same-named one (name + category) or creates it.
+2. **Pull**: every master blank is written into the local row linked to it.
+   Studio's copy wins; local ids never change, so `products.blank_id` holds.
+
+The package migration adds `blanks.catalog_id`. Wire the admin once:
+`BlankCatalog::locked($record)` makes a Studio blank read-only,
+`BlankCatalog::editOnStudioAction()` links to it on Studio, and
+`BlankCatalog::syncAction()` is a "Sync now" button for the list.
 
 ## Writing package code
 
@@ -74,5 +91,5 @@ silently sees null fields.
 
 ## Releasing a change
 
-Commit, then tag the next 1.x (`git tag v1.0.1 && git push --tags`). Sites
+Commit, then tag the next 1.x (`git tag v1.1.1 && git push --tags`). Sites
 require `^1.0`, so `composer update chargefield/store` picks it up.

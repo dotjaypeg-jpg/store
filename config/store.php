@@ -22,6 +22,7 @@ return [
         'stockist' => 'App\Models\Stockist',
         'product' => 'App\Models\Product',
         'product_variant' => 'App\Models\ProductVariant',
+        'blank' => 'App\Models\Blank',
     ],
 
     // Prefix for new order numbers (PREFIX-XXXXXXXX).
@@ -52,6 +53,23 @@ return [
         'orders' => 'Store',
         'pricing' => 'Store',
         'stockists' => 'Portfolio',
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Shared catalogue (Studio)
+    |--------------------------------------------------------------------------
+    |
+    | Studio holds the master blanks. With both set, `store:sync-blanks` runs
+    | hourly: it offers Studio any local blank it doesn't know yet, then pulls
+    | every master blank into the local table. `url` is Studio's base URL; the
+    | secret matches Studio's CATALOG_SECRET. Unset = the site keeps its own
+    | blanks, as before.
+    |
+    */
+    'catalog' => [
+        'url' => env('STORE_CATALOG_URL'),
+        'secret' => env('STORE_CATALOG_SECRET'),
     ],
 
 ];
