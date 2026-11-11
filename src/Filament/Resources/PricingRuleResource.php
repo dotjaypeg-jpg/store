@@ -3,7 +3,6 @@
 namespace Chargefield\Store\Filament\Resources;
 
 use Chargefield\Store\Filament\Resources\PricingRuleResource\Pages;
-use Chargefield\Store\Models\PricingRule;
 use Chargefield\Store\Store;
 use Filament\Forms;
 use Filament\Forms\Form;
@@ -60,7 +59,7 @@ class PricingRuleResource extends Resource
             ->groups([
                 Group::make('category')
                     ->titlePrefixedWithLabel(false)
-                    ->getTitleFromRecordUsing(fn (PricingRule $r) => ucfirst((string) $r->category)),
+                    ->getTitleFromRecordUsing(fn ($record) => ucfirst((string) $record->category)),
             ])
             ->defaultGroup('category')
             ->defaultSort('price')
@@ -73,18 +72,18 @@ class PricingRuleResource extends Resource
                     ->label('Sell price ($)'),
                 Tables\Columns\TextColumn::make('maxCost')
                     ->label('Highest cost')
-                    ->state(fn (PricingRule $r) => $r->maxCost())
+                    ->state(fn ($record) => $record->maxCost())
                     ->money(fn () => Store::currency())
                     ->placeholder('—')
                     ->description('what we pay'),
                 Tables\Columns\IconColumn::make('margin')
                     ->label('Margin')
-                    ->state(fn (PricingRule $r) => ! $r->isBelowCost())
+                    ->state(fn ($record) => ! $record->isBelowCost())
                     ->trueIcon('heroicon-o-check-circle')
                     ->falseIcon('heroicon-o-exclamation-triangle')
                     ->trueColor('success')
                     ->falseColor('danger')
-                    ->tooltip(fn (PricingRule $r) => $r->isBelowCost()
+                    ->tooltip(fn ($record) => $record->isBelowCost()
                         ? 'Below cost! This price is lower than what the provider charges.'
                         : 'Priced above cost.'),
             ])

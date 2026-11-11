@@ -3,8 +3,6 @@
 namespace Chargefield\Store\Filament\Resources;
 
 use Chargefield\Store\Filament\Resources\OrderResource\Pages;
-use Chargefield\Store\Models\Order;
-use Chargefield\Store\Models\OrderItem;
 use Chargefield\Store\Store;
 use Filament\Forms\Form;
 use Filament\Infolists\Components\RepeatableEntry;
@@ -74,14 +72,14 @@ class OrderResource extends Resource
                         default => 'danger',
                     }),
                 Tables\Columns\TextColumn::make('total')
-                    ->money(fn (Order $r) => $r->currency)
+                    ->money(fn ($record) => $record->currency)
                     ->sortable(),
                 Tables\Columns\TextColumn::make('placed_at')
                     ->label('Placed')
                     ->dateTime('M j, Y')
                     ->sortable()
                     ->placeholder('—')
-                    ->description(fn (Order $r) => $r->placed_at ? null : 'created '.$r->created_at->format('M j, Y')),
+                    ->description(fn ($record) => $record->placed_at ? null : 'created '.$record->created_at->format('M j, Y')),
             ])
             ->filters([
                 Tables\Filters\SelectFilter::make('source')
@@ -126,7 +124,7 @@ class OrderResource extends Resource
                     ->placeholder('—')
                     // Compute a one-line string via ->state() so Filament never renders the
                     // raw shipping_address array (that throws "array to string conversion").
-                    ->state(function (Order $record) {
+                    ->state(function ($record) {
                         $a = (array) $record->shipping_address;
                         $inner = is_array($a['address'] ?? null) ? $a['address'] : [];
                         $get = fn (...$keys) => collect($keys)->map(fn ($k) => $a[$k] ?? $inner[$k] ?? null)->first(fn ($v) => filled($v));
@@ -142,9 +140,9 @@ class OrderResource extends Resource
                     ->placeholder('Full details retained')
                     ->color(fn ($state) => $state ? 'gray' : 'info')
                     ->formatStateUsing(fn ($state) => 'Reduced '.$state->format('M j, Y')),
-                TextEntry::make('subtotal')->money(fn (Order $r) => $r->currency),
-                TextEntry::make('shipping_total')->label('Shipping')->money(fn (Order $r) => $r->currency),
-                TextEntry::make('total')->money(fn (Order $r) => $r->currency)->weight('bold'),
+                TextEntry::make('subtotal')->money(fn ($record) => $record->currency),
+                TextEntry::make('shipping_total')->label('Shipping')->money(fn ($record) => $record->currency),
+                TextEntry::make('total')->money(fn ($record) => $record->currency)->weight('bold'),
             ]),
             Section::make('Items')->schema([
                 RepeatableEntry::make('items')->schema([
@@ -152,10 +150,10 @@ class OrderResource extends Resource
                     // by id, else by title for historical imports); plain text if it's
                     // been removed. Opens the storefront in a new tab.
                     TextEntry::make('title')
-                        ->url(fn (OrderItem $record) => $record->productUrl())
+                        ->url(fn ($record) => $record->productUrl())
                         ->openUrlInNewTab()
-                        ->color(fn (OrderItem $record) => $record->productUrl() ? 'primary' : null)
-                        ->tooltip(fn (OrderItem $record) => $record->productUrl() ? 'View product' : 'Product no longer exists'),
+                        ->color(fn ($record) => $record->productUrl() ? 'primary' : null)
+                        ->tooltip(fn ($record) => $record->productUrl() ? 'View product' : 'Product no longer exists'),
                     TextEntry::make('variant_title')->label('Variant')->placeholder('—'),
                     TextEntry::make('quantity')->label('Qty'),
                     TextEntry::make('price')->money(fn () => Store::currency()),
@@ -164,7 +162,7 @@ class OrderResource extends Resource
             ]),
             Section::make('Fulfilment')
                 ->description('One entry per print provider this order was routed to.')
-                ->visible(fn (Order $record) => $record->fulfillments()->exists())
+                ->visible(fn ($record) => $record->fulfillments()->exists())
                 ->schema([
                     RepeatableEntry::make('fulfillments')->schema([
                         TextEntry::make('provider')->badge(),
@@ -181,11 +179,11 @@ class OrderResource extends Resource
                 ]),
 
             Section::make('Shipping address')
-                ->visible(fn (Order $record) => filled($record->shipping_address))
+                ->visible(fn ($record) => filled($record->shipping_address))
                 ->schema([
                     TextEntry::make('shipping_address_full')
                         ->label('')
-                        ->state(fn (Order $record) => is_array($record->shipping_address)
+                        ->state(fn ($record) => is_array($record->shipping_address)
                             ? json_encode($record->shipping_address, JSON_PRETTY_PRINT)
                             : (string) $record->shipping_address),
                 ]),

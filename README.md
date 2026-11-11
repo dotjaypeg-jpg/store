@@ -64,6 +64,14 @@ A site adds its own extras on its subclass (johngodfrey's `Stockist` adds
 | `image_url` | public disk | `[Class::class, 'method']` turning a stored path into a URL |
 | `navigation.*` | Store / Store / Portfolio | nav group per screen |
 
+## Writing package code
+
+Sites hand Filament their own subclasses (`App\Models\Order`), so in resource
+closures take the row **by name, untyped**: `fn ($record) => …`. Filament only
+injects a typed parameter like `fn (Order $r)` when the type is the record's
+exact class; for a subclass it builds an empty `Order` instead, and the closure
+silently sees null fields.
+
 ## Releasing a change
 
 Commit, then tag the next 1.x (`git tag v1.0.1 && git push --tags`). Sites

@@ -3,7 +3,6 @@
 namespace Chargefield\Store\Filament\Resources;
 
 use Chargefield\Store\Filament\Resources\StockistResource\Pages;
-use Chargefield\Store\Models\Stockist;
 use Chargefield\Store\Store;
 use Filament\Forms;
 use Filament\Forms\Form;
@@ -69,7 +68,7 @@ class StockistResource extends Resource
                     // logoUrl() is a root-relative path (/assets/stockists/…); make it an
                     // absolute URL so Filament renders it directly rather than through the
                     // storage disk (which would 404).
-                    ->getStateUsing(function (Stockist $record) {
+                    ->getStateUsing(function ($record) {
                         $url = $record->logoUrl();
 
                         return $url && ! Str::startsWith($url, ['http://', 'https://']) ? url($url) : $url;
@@ -87,7 +86,7 @@ class StockistResource extends Resource
                 ] : []),
                 Tables\Columns\TextColumn::make('url')
                     ->label('Website')
-                    ->url(fn (Stockist $record) => $record->url, true)
+                    ->url(fn ($record) => $record->url, true)
                     ->placeholder('—'),
             ])
             ->actions([
