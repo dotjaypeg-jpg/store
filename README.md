@@ -81,6 +81,21 @@ The package migration adds `blanks.catalog_id`. Wire the admin once:
 `BlankCatalog::editOnStudioAction()` links to it on Studio, and
 `BlankCatalog::syncAction()` is a "Sync now" button for the list.
 
+## Products in Studio's index
+
+Products are still edited on their store. With `store.catalog.product_snapshot`
+set (a `[Class::class, 'method']` returning one product's snapshot: see
+`ProductReport` for the keys), `store:report-products` runs hourly and sends
+every product to Studio's Catalogue -> Products, under the sales store key.
+Products missing from a report are marked removed on Studio, not deleted.
+
+Every sale sent to Studio also carries `lines` (product_id, title,
+variant_title, quantity, amount_cents), so Studio knows what sold per product.
+The first product report re-sends the sale history once to fill those in.
+
+A site's `catalog` block replaces the package's, so spell out `url` and
+`secret` next to `product_snapshot`.
+
 ## Writing package code
 
 Sites hand Filament their own subclasses (`App\Models\Order`), so in resource

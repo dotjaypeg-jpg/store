@@ -124,7 +124,8 @@ class Order extends Model implements ReportsToStudio
 
         $address = (array) ($this->shipping_address ?? []);
         $country = $address['address']['country'] ?? $address['country'] ?? null;
-        $units = (int) $this->items()->sum('quantity');
+        $items = $this->items()->get();
+        $units = (int) $items->sum('quantity');
 
         return [
             'ref' => $this->order_number,
@@ -137,6 +138,14 @@ class Order extends Model implements ReportsToStudio
             'country' => is_string($country) ? strtoupper($country) : null,
             'party' => null,
             'description' => $units > 0 ? $units.' item'.($units === 1 ? '' : 's') : null,
+            // What sold, per product: Studio's product index and partner cuts.
+            'lines' => $items->map(fn ($item) => [
+                'product_id' => $item->product_id,
+                'title' => (string) $item->title,
+                'variant_title' => $item->variant_title,
+                'quantity' => (int) $item->quantity,
+                'amount_cents' => (int) round((float) $item->price * 100) * (int) $item->quantity,
+            ])->values()->all(),
         ];
     }
 
