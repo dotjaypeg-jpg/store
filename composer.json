@@ -9,13 +9,13 @@
     },
     "autoload": {
         "psr-4": {
-            "Chargefield\Store\\": "src/"
+            "Chargefield\\Store\\": "src/"
         }
     },
     "extra": {
         "laravel": {
             "providers": [
-                "Chargefield\Store\StoreServiceProvider"
+                "Chargefield\\Store\\StoreServiceProvider"
             ]
         }
     },
