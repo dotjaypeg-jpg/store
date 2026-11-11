@@ -3,7 +3,9 @@
 namespace Chargefield\Store;
 
 use Chargefield\Store\Catalog\BlankSync;
+use Chargefield\Store\Console\ReportSales;
 use Chargefield\Store\Console\SyncBlanks;
+use Chargefield\Store\Sales\StudioSales;
 use Illuminate\Console\Scheduling\Schedule;
 use Illuminate\Support\ServiceProvider;
 
@@ -23,12 +25,16 @@ class StoreServiceProvider extends ServiceProvider
         $this->loadMigrationsFrom(__DIR__.'/../database/migrations');
 
         if ($this->app->runningInConsole()) {
-            $this->commands([SyncBlanks::class]);
+            $this->commands([SyncBlanks::class, ReportSales::class]);
 
             // Hourly pull from Studio, only on sites that set the catalogue up.
             $this->callAfterResolving(Schedule::class, function (Schedule $schedule) {
                 if (BlankSync::enabled()) {
                     $schedule->command('store:sync-blanks')->hourly()->withoutOverlapping()->onOneServer();
+                }
+                // Nightly catch-up for any sale a queued send missed.
+                if (StudioSales::enabled()) {
+                    $schedule->command('store:report-sales')->dailyAt('03:30')->withoutOverlapping()->onOneServer();
                 }
             });
         }
