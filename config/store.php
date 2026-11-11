@@ -72,4 +72,23 @@ return [
         'secret' => env('STORE_CATALOG_SECRET'),
     ],
 
+
+    /*
+    |--------------------------------------------------------------------------
+    | Sales into Studio's revenue ledger
+    |--------------------------------------------------------------------------
+    |
+    | With the catalogue's Studio URL + secret above and a store key here, every
+    | paid live order (and anything else listed in `models`) is sent to Studio
+    | as it's paid, refunded or cancelled, so the business-wide books include
+    | store income. `store` is the key Studio files this store under (e.g.
+    | "johngodfrey"). `models` are what `store:report-sales` sweeps: model-map
+    | keys or class names implementing Sales\ReportsToStudio.
+    |
+    */
+    'sales' => [
+        'store' => env('STORE_SALES_KEY'),
+        'models' => ['order'],
+    ],
+
 ];

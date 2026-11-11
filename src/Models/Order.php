@@ -6,6 +6,8 @@ use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Carbon;
+use Chargefield\Store\Sales\ReportsToStudio;
+use Chargefield\Store\Sales\SendsSalesToStudio;
 use Chargefield\Store\Store;
 use Illuminate\Support\Str;
 
@@ -38,8 +40,13 @@ use Illuminate\Support\Str;
  * @property-read Collection<int, OrderItem> $items
  * @property-read Collection<int, OrderFulfillment> $fulfillments
  */
-class Order extends Model
+class Order extends Model implements ReportsToStudio
 {
+    use SendsSalesToStudio;
+
+    /** Statuses that mean no money has come in yet: nothing to tell Studio. */
+    public const UNPAID_STATUSES = ['pending', 'open', 'draft', 'expired', 'abandoned'];
+
     protected $table = 'orders';
 
     protected $guarded = [];
@@ -86,6 +93,57 @@ class Order extends Model
     public function isPaid(): bool
     {
         return $this->status === 'paid';
+    }
+
+    /**
+     * A genuinely live checkout (a `cs_live_` Stripe session), as opposed to a test
+     * checkout. Imported history (e.g. Shopify) is neither.
+     */
+    public function isLiveCheckout(): bool
+    {
+        return str_starts_with((string) $this->stripe_session_id, 'cs_live_');
+    }
+
+    /** @return array<string, mixed>|null */
+    public function studioSale(bool $includeImported = false): ?array
+    {
+        $imported = ! $this->isLiveCheckout() && $this->source !== 'store';
+        if (! $this->isLiveCheckout() && ! ($includeImported && $imported)) {
+            return null;
+        }
+        if (in_array($this->status, self::UNPAID_STATUSES, true) || $this->status === null) {
+            return null;
+        }
+
+        $total = (int) round((float) $this->total * 100);
+        $refunded = (int) round((float) $this->refunded_total * 100);
+        $received = max(0, $total - $refunded);
+        $tax = (int) round((float) $this->tax_total * 100);
+        // A partial refund gives back its share of the tax too.
+        $taxKept = $total > 0 ? (int) round($tax * $received / $total) : 0;
+
+        $address = (array) ($this->shipping_address ?? []);
+        $country = $address['address']['country'] ?? $address['country'] ?? null;
+        $units = (int) $this->items()->sum('quantity');
+
+        return [
+            'ref' => $this->order_number,
+            'kind' => 'store',
+            'status' => in_array($this->status, ['refunded', 'cancelled'], true) ? $this->status : 'paid',
+            'occurred_on' => ($this->placed_at ?? $this->created_at ?? now())->toDateString(),
+            'currency' => strtoupper($this->currency ?: (string) config('store.currency', 'CAD')),
+            'amount_cents' => $received,
+            'tax_cents' => $taxKept,
+            'country' => is_string($country) ? strtoupper($country) : null,
+            'party' => null,
+            'description' => $units > 0 ? $units.' item'.($units === 1 ? '' : 's') : null,
+        ];
+    }
+
+    /** @return array<int, string> */
+    public function studioSaleWatched(): array
+    {
+        return ['status', 'total', 'tax_total', 'refunded_total', 'placed_at', 'stripe_session_id'];
     }
 
     public function markPaid(?string $paymentIntent = null): void
