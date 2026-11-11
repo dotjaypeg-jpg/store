@@ -70,6 +70,11 @@ return [
     'catalog' => [
         'url' => env('STORE_CATALOG_URL'),
         'secret' => env('STORE_CATALOG_SECRET'),
+
+        // fn (Model $product): array  what Studio's product index gets for one
+        // product (see ProductReport for the keys). Set it and `store:report-products`
+        // runs hourly; null = products aren't reported.
+        'product_snapshot' => null,
     ],
 
 
