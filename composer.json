@@ -1,0 +1,24 @@
+{
+    "name": "chargefield/store",
+    "description": "Shared store admin for Chargefield sites: orders, pricing rules and stockists (models + Filament resources).",
+    "type": "library",
+    "license": "proprietary",
+    "require": {
+        "php": "^8.2",
+        "filament/filament": "^3.2"
+    },
+    "autoload": {
+        "psr-4": {
+            "Chargefield\Store\\": "src/"
+        }
+    },
+    "extra": {
+        "laravel": {
+            "providers": [
+                "Chargefield\Store\StoreServiceProvider"
+            ]
+        }
+    },
+    "minimum-stability": "stable",
+    "prefer-stable": true
+}
