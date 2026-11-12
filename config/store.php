@@ -121,6 +121,9 @@ return [
     'masters' => [
         'disk' => 'masters',
         'model' => \Chargefield\Store\Masters\MasterFile::class,
+        // Run masters:rename --write nightly (03:15), so files follow edits to
+        // a title, client or year. Safe to repeat: named files are skipped.
+        'auto_rename' => true,
     ],
 
     /*
