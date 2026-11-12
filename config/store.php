@@ -75,6 +75,17 @@ return [
         // product (see ProductReport for the keys). Set it and `store:report-products`
         // runs hourly; null = products aren't reported.
         'product_snapshot' => null,
+
+        // Carrying another store's products (listed in Studio, Products ->
+        // "Carry on"). Both callables, set to take part:
+        //  - carry: fn (array $listing, ?Model $existing): Model  write the local
+        //    copy from Studio's listing (new ones as drafts; keep the local status
+        //    and price overrides on refresh). `store:sync-carried` runs hourly.
+        //  - print_file: fn (Model $product): ?string  a short-lived signed URL to
+        //    one of this store's own print files, for an order on another store.
+        //    Turns on GET /api/store/print-file/{id}.
+        'carry' => null,
+        'print_file' => null,
     ],
 
 

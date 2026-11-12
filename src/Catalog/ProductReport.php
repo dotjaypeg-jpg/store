@@ -16,8 +16,12 @@ use Illuminate\Support\Facades\Http;
  * callable returning, for one product:
  *   id, title, handle, category, status, blank_catalog_id, provider, currency,
  *   price_min_cents, price_max_cents, variants [{id, title, sku, price_cents}],
- *   url, admin_url, image_url
- * Files under the store key the sales use (store.sales.store).
+ *   url, admin_url, image_url,
+ *   detail {description, variants [...], images [...], ...}  what another store
+ *     needs to carry it (see Catalog\Carrying)
+ *   carried_catalog_id  on a copy carried from another store
+ * Files under the store key the sales use (store.sales.store), with this
+ * site's base URL so Studio can reach it for print files.
  */
 class ProductReport
 {
@@ -57,7 +61,7 @@ class ProductReport
         $last = count($batches) - 1;
 
         foreach ($batches as $i => $batch) {
-            $payload = ['store' => StudioSales::storeKey(), 'products' => $batch];
+            $payload = ['store' => StudioSales::storeKey(), 'base_url' => url('/'), 'products' => $batch];
             if ($i === $last) {
                 $payload['present_ids'] = $ids;
             }
