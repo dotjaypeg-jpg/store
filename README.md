@@ -148,7 +148,8 @@ copy), or a commission's `onesheet`, `teaser`, `alt`, `character`, `festival`.
   missing sizes; `--checksums` also reads files with no sha256 yet.
 - `php artisan masters:rename [--write]` moves files saved under older names
   into that layout (a server-side copy on R2/Spaces) and repoints every record
-  using them. Dry run unless `--write`.
+  using them. Dry run unless `--write`. It runs nightly at 03:15 (set
+  `store.masters.auto_rename` to false to stop it), so files follow edits.
 
 - Each master has a category (`Masters\MasterCategories`: movie posters,
   album art, game art, apparel and so on). Apparel files are always apparel;

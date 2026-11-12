@@ -70,6 +70,11 @@ class StoreServiceProvider extends ServiceProvider
                 if (Carrying::enabled()) {
                     $schedule->command('store:sync-carried')->hourlyAt(20)->withoutOverlapping()->onOneServer();
                 }
+                // Masters renamed after edits (a new title, client or year), just
+                // before the 03:30 report so the library shows the new paths.
+                if (config('store.masters.auto_rename', true)) {
+                    $schedule->command('masters:rename', ['--write' => true])->dailyAt('03:15')->withoutOverlapping()->onOneServer();
+                }
                 // Masters into Studio's library.
                 if (MasterReport::enabled()) {
                     $schedule->command('store:report-masters')->hourlyAt(30)->withoutOverlapping()->onOneServer();
