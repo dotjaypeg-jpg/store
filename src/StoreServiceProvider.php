@@ -9,6 +9,7 @@ use Chargefield\Store\Console\ReportProducts;
 use Chargefield\Store\Console\ReportSales;
 use Chargefield\Store\Console\SyncBlanks;
 use Chargefield\Store\Console\SyncCarried;
+use Chargefield\Store\Console\VerifyMasters;
 use Chargefield\Store\Http\PrintFileController;
 use Chargefield\Store\Sales\StudioSales;
 use Illuminate\Console\Scheduling\Schedule;
@@ -40,7 +41,7 @@ class StoreServiceProvider extends ServiceProvider
         }
 
         if ($this->app->runningInConsole()) {
-            $this->commands([SyncBlanks::class, ReportSales::class, ReportProducts::class, SyncCarried::class]);
+            $this->commands([SyncBlanks::class, ReportSales::class, ReportProducts::class, SyncCarried::class, VerifyMasters::class]);
 
             // Hourly pull from Studio, only on sites that set the catalogue up.
             $this->callAfterResolving(Schedule::class, function (Schedule $schedule) {

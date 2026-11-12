@@ -107,4 +107,20 @@ return [
         'models' => ['order'],
     ],
 
+    /*
+    |--------------------------------------------------------------------------
+    | Masters
+    |--------------------------------------------------------------------------
+    |
+    | Private master files (print masters, apparel designs, commission
+    | one-sheets) in one `master_files` table, owned by any model that uses
+    | Masters\HasMasters. `disk` is the private disk they live on; `model` lets
+    | a site use its own subclass (for a policy or a download route).
+    |
+    */
+    'masters' => [
+        'disk' => 'masters',
+        'model' => \Chargefield\Store\Masters\MasterFile::class,
+    ],
+
 ];
