@@ -19,9 +19,10 @@ secrets and client data.
 | `OrderFulfillment` | `order_fulfillments` | shown inside an order |
 | `PricingRule` | `pricing_rules` | Store → Pricing |
 | `Stockist` | `stockists` | Portfolio → Stockists |
+| `Masters\MasterFile` | `master_files` | each site's own screens (see Masters) |
 
-The tables already exist on each site; the only migration the package ships adds
-`blanks.catalog_id` for the shared catalogue.
+The store tables already exist on each site. The package's migrations add
+`blanks.catalog_id`, `products.carried_catalog_id` and the `master_files` table.
 
 ## Install
 
@@ -118,6 +119,39 @@ which asks Studio, which asks the home store. The package migration adds
 `products.carried_catalog_id` (Studio's id for the original), and the product
 snapshot should send it as `carried_catalog_id`. Only print-on-demand products
 can be carried: Studio won't list self-held stock.
+
+## Masters
+
+Every site keeps its private masters the same way: one `master_files` table
+(the package migration creates it), one row per file, owned by any model that
+uses `Masters\HasMasters`. A row's `role` says what the file is for: `poster`
+(full artwork), `apparel` (garment design), `apparel_print` (the lean print
+copy), or a commission's `onesheet`, `teaser`, `alt`, `character`, `festival`.
+
+- Save through `Masters\MasterVault`. `store()` takes an upload, names it
+  from the owner (never the uploaded name), takes the extension from the
+  file's bytes, and adds `-2`, `-3`… on a clash. `putBytes()` writes a master
+  made in code to an exact path. Both record size, sha256 and pixels.
+- Read with `$model->masterFile('poster')`, `->masterFileUrl('poster', 60)`
+  (a signed link, null on the local dev disk), and the `withMaster('poster')`
+  / `withoutMaster('poster')` query scopes.
+- `recordMaster()` replaces a role's one master; `addMaster()` adds another.
+  Deleting a row deletes its file unless another row uses the same path.
+- `php artisan masters:verify` checks every file is on its disk and fills in
+  missing sizes; `--checksums` also reads files with no sha256 yet.
+
+Disks, in `config/filesystems.php`:
+
+```php
+'masters' => \Chargefield\Store\Masters\Masters::diskConfig(),
+'backups' => \Chargefield\Store\Masters\Masters::backupsConfig(),
+```
+
+Both read the same env names everywhere: `MASTERS_BUCKET`,
+`MASTERS_ACCESS_KEY_ID`, `MASTERS_SECRET_ACCESS_KEY`, `MASTERS_DEFAULT_REGION`,
+`MASTERS_ENDPOINT`, and the `BACKUP_*` set. No bucket means a local folder
+under `storage/app`. The older `MASTERS_DRIVER`, `MASTERS_KEY`,
+`MASTERS_SECRET` and `MASTERS_REGION` still work.
 
 ## Writing package code
 
