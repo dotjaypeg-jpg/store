@@ -34,7 +34,8 @@ class MasterReport
         return [
             'id' => $file->id,
             'role' => $file->role,
-            'category' => $file->category(),
+            'category' => $category = $file->category(),
+            'category_label' => MasterCategories::label($category),
             'owner_type' => $owner ? class_basename($owner) : class_basename((string) $file->owner_type),
             'owner_id' => $file->owner_id,
             'title' => filled($naming['title'] ?? null) ? (string) $naming['title'] : null,
