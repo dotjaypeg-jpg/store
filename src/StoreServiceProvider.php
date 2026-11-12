@@ -45,8 +45,9 @@ class StoreServiceProvider extends ServiceProvider
                 ->name('store.print-file');
         }
 
-        // Studio's masters library fetches a signed download link here.
-        if (filled(config('store.catalog.secret')) && ! $this->app->routesAreCached()) {
+        // Studio's masters library fetches a signed download link here. Always
+        // registered; it refuses every request while no catalogue secret is set.
+        if (! $this->app->routesAreCached()) {
             Route::get('/api/store/master-file/{id}', MasterFileController::class)
                 ->whereNumber('id')
                 ->middleware('throttle:120,1')
