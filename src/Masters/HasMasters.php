@@ -26,6 +26,27 @@ trait HasMasters
         });
     }
 
+    /**
+     * What this owner's master files are named from (see MasterVault::namedPath):
+     *
+     *   {client}/{title}-{year}/{title}-{year}-{role}.{ext}
+     *
+     * e.g. a24/dune-2021/dune-2021-onesheet.tif. Override per model; the default
+     * reads `title` (else `name`) and `year`, with no client.
+     *
+     * @return array{client: string|null, title: string|null, year: int|string|null}
+     */
+    public function masterNaming(): array
+    {
+        $attributes = $this->getAttributes();
+
+        return [
+            'client' => null,
+            'title' => $attributes['title'] ?? $attributes['name'] ?? null,
+            'year' => $attributes['year'] ?? null,
+        ];
+    }
+
     /** @return MorphMany<MasterFile, $this> */
     public function masterFiles(): MorphMany
     {

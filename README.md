@@ -129,10 +129,16 @@ uses `Masters\HasMasters`. A row's `role` says what the file is for: `poster`
 (full artwork), `apparel` (garment design), `apparel_print` (the lean print
 copy), or a commission's `onesheet`, `teaser`, `alt`, `character`, `festival`.
 
-- Save through `Masters\MasterVault`. `store()` takes an upload, names it
-  from the owner (never the uploaded name), takes the extension from the
-  file's bytes, and adds `-2`, `-3`… on a clash. `putBytes()` writes a master
-  made in code to an exact path. Both record size, sha256 and pixels.
+- Every master is named from what it is, never from the uploaded file:
+  `{client}/{title}-{year}/{title}-{year}-{role}.{ext}`, e.g.
+  `a24/dune-2021/dune-2021-onesheet.tif`, or `own-work/…` with no client. The
+  owner says what goes in by overriding `masterNaming()` (default: its
+  `title` or `name`, its `year`, no client).
+- Save through `Masters\MasterVault`. `store()` takes an upload, takes the
+  extension from the file's bytes, and adds `-2`, `-3`… on a clash.
+  `putBytes()` writes a master made in code as the role's one master. Both
+  name the file from the owner unless given a path, and record size, sha256
+  and pixels.
 - Read with `$model->masterFile('poster')`, `->masterFileUrl('poster', 60)`
   (a signed link, null on the local dev disk), and the `withMaster('poster')`
   / `withoutMaster('poster')` query scopes.
@@ -140,6 +146,9 @@ copy), or a commission's `onesheet`, `teaser`, `alt`, `character`, `festival`.
   Deleting a row deletes its file unless another row uses the same path.
 - `php artisan masters:verify` checks every file is on its disk and fills in
   missing sizes; `--checksums` also reads files with no sha256 yet.
+- `php artisan masters:rename [--write]` moves files saved under older names
+  into that layout (a server-side copy on R2/Spaces) and repoints every record
+  using them. Dry run unless `--write`.
 
 Disks, in `config/filesystems.php`:
 

@@ -6,6 +6,7 @@ use Chargefield\Store\Catalog\BlankSync;
 use Chargefield\Store\Catalog\Carrying;
 use Chargefield\Store\Catalog\ProductReport;
 use Chargefield\Store\Console\LinkStudioClients;
+use Chargefield\Store\Console\RenameMasters;
 use Chargefield\Store\Console\ReportProducts;
 use Chargefield\Store\Console\ReportSales;
 use Chargefield\Store\Console\SyncBlanks;
@@ -42,7 +43,7 @@ class StoreServiceProvider extends ServiceProvider
         }
 
         if ($this->app->runningInConsole()) {
-            $this->commands([SyncBlanks::class, ReportSales::class, ReportProducts::class, SyncCarried::class, VerifyMasters::class, LinkStudioClients::class]);
+            $this->commands([SyncBlanks::class, ReportSales::class, ReportProducts::class, SyncCarried::class, VerifyMasters::class, RenameMasters::class, LinkStudioClients::class]);
 
             // Hourly pull from Studio, only on sites that set the catalogue up.
             $this->callAfterResolving(Schedule::class, function (Schedule $schedule) {
