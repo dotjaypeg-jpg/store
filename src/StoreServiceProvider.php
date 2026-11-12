@@ -7,12 +7,15 @@ use Chargefield\Store\Catalog\Carrying;
 use Chargefield\Store\Catalog\ProductReport;
 use Chargefield\Store\Console\LinkStudioClients;
 use Chargefield\Store\Console\RenameMasters;
+use Chargefield\Store\Console\ReportMasters;
 use Chargefield\Store\Console\ReportProducts;
 use Chargefield\Store\Console\ReportSales;
 use Chargefield\Store\Console\SyncBlanks;
 use Chargefield\Store\Console\SyncCarried;
 use Chargefield\Store\Console\VerifyMasters;
+use Chargefield\Store\Http\MasterFileController;
 use Chargefield\Store\Http\PrintFileController;
+use Chargefield\Store\Masters\MasterReport;
 use Chargefield\Store\Sales\StudioSales;
 use Illuminate\Console\Scheduling\Schedule;
 use Illuminate\Support\Facades\Route;
@@ -42,8 +45,17 @@ class StoreServiceProvider extends ServiceProvider
                 ->name('store.print-file');
         }
 
+        // Studio's masters library fetches a signed download link here. Always
+        // registered; it refuses every request while no catalogue secret is set.
+        if (! $this->app->routesAreCached()) {
+            Route::get('/api/store/master-file/{id}', MasterFileController::class)
+                ->whereNumber('id')
+                ->middleware('throttle:120,1')
+                ->name('store.master-file');
+        }
+
         if ($this->app->runningInConsole()) {
-            $this->commands([SyncBlanks::class, ReportSales::class, ReportProducts::class, SyncCarried::class, VerifyMasters::class, RenameMasters::class, LinkStudioClients::class]);
+            $this->commands([SyncBlanks::class, ReportSales::class, ReportProducts::class, SyncCarried::class, VerifyMasters::class, RenameMasters::class, ReportMasters::class, LinkStudioClients::class]);
 
             // Hourly pull from Studio, only on sites that set the catalogue up.
             $this->callAfterResolving(Schedule::class, function (Schedule $schedule) {
@@ -57,6 +69,10 @@ class StoreServiceProvider extends ServiceProvider
                 // Products carried from other stores, after the reports so new listings are in.
                 if (Carrying::enabled()) {
                     $schedule->command('store:sync-carried')->hourlyAt(20)->withoutOverlapping()->onOneServer();
+                }
+                // Masters into Studio's library.
+                if (MasterReport::enabled()) {
+                    $schedule->command('store:report-masters')->hourlyAt(30)->withoutOverlapping()->onOneServer();
                 }
                 // Nightly catch-up for any sale a queued send missed.
                 if (StudioSales::enabled()) {
