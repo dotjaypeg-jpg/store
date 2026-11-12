@@ -68,6 +68,7 @@ A site adds its own extras on its subclass (johngodfrey's `Stockist` adds
 | `catalog.url` / `catalog.secret` | unset | Studio's base URL + its `CATALOG_SECRET`: turns on shared blanks |
 | `catalog.product_snapshot` | `null` | one product's snapshot for Studio's index |
 | `catalog.carry` / `catalog.print_file` | `null` | carrying products across stores (see below) |
+| `studio_clients.models` | `[]` | models `studio:link-clients` matches to Studio clients by name |
 
 ## Shared blanks (Studio catalogue)
 
@@ -152,6 +153,23 @@ Both read the same env names everywhere: `MASTERS_BUCKET`,
 `MASTERS_ENDPOINT`, and the `BACKUP_*` set. No bucket means a local folder
 under `storage/app`. The older `MASTERS_DRIVER`, `MASTERS_KEY`,
 `MASTERS_SECRET` and `MASTERS_REGION` still work.
+
+## Studio clients
+
+Studio PM keeps the one client list. A record made for a client (a chargefield
+client, a johngodfrey Work) stores that client's Studio id in a nullable
+`studio_client_id` column, so the same client reads the same on every site.
+
+- `Studio\StudioClients::all()` / `options()` / `name($id)` / `url($id)` read
+  Studio's `GET /api/catalog/clients` (catalogue secret), cached five minutes.
+  Only business names come over. Unconfigured = empty.
+- `Studio\StudioClients::match($name)` finds the one client with that name after
+  normalising (legal suffixes and punctuation dropped), or null.
+- `Studio\LinksStudioClient` (trait) adds `studioClientName()`, `studioClientUrl()`
+  and `forStudioClient($id)`. Override `studioClientNameColumn()` when the
+  model's own client-name column isn't `client`.
+- `php artisan studio:link-clients [--write]` matches unlinked rows of the models
+  in `store.studio_clients.models` by name. Dry run unless `--write`.
 
 ## Writing package code
 

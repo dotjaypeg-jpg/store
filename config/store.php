@@ -123,4 +123,19 @@ return [
         'model' => \Chargefield\Store\Masters\MasterFile::class,
     ],
 
+    /*
+    |--------------------------------------------------------------------------
+    | Studio clients
+    |--------------------------------------------------------------------------
+    |
+    | Studio PM holds the one client list. Records made for a client store its
+    | Studio id in `studio_client_id` (models use Studio\LinksStudioClient).
+    | `studio:link-clients` matches the free-text names of the models listed here
+    | to Studio's clients for rows not linked yet. Needs the catalogue URL + secret.
+    |
+    */
+    'studio_clients' => [
+        'models' => [],
+    ],
+
 ];
