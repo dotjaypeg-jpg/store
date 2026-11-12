@@ -65,6 +65,8 @@ A site adds its own extras on its subclass (johngodfrey's `Stockist` adds
 | `image_url` | public disk | `[Class::class, 'method']` turning a stored path into a URL |
 | `navigation.*` | Store / Store / Portfolio | nav group per screen |
 | `catalog.url` / `catalog.secret` | unset | Studio's base URL + its `CATALOG_SECRET`: turns on shared blanks |
+| `catalog.product_snapshot` | `null` | one product's snapshot for Studio's index |
+| `catalog.carry` / `catalog.print_file` | `null` | carrying products across stores (see below) |
 
 ## Shared blanks (Studio catalogue)
 
@@ -95,6 +97,27 @@ The first product report re-sends the sale history once to fill those in.
 
 A site's `catalog` block replaces the package's, so spell out `url` and
 `secret` next to `product_snapshot`.
+
+## Carrying another store's products
+
+A product keeps one home store. In Studio, Products -> "Carry on…" lists it on
+another store too. Two callables in the `catalog` block switch it on:
+
+- `carry`: `fn (array $listing, ?Model $existing): Model` writes the local
+  copy from Studio's listing (title, description, images, variants). New copies
+  land as drafts; a refresh keeps the local status and price overrides.
+  `store:sync-carried` runs hourly at :20, and a listing that's switched off
+  puts its copy back to draft.
+- `print_file`: `fn (Model $product): ?string` returns a short-lived signed
+  URL to one of this store's own print files. It turns on
+  `GET /api/store/print-file/{id}` (bearer: the catalogue secret), which Studio
+  calls when another store has an order to print.
+
+At order time the carrying store calls `Carrying::printFileUrl($product)`,
+which asks Studio, which asks the home store. The package migration adds
+`products.carried_catalog_id` (Studio's id for the original), and the product
+snapshot should send it as `carried_catalog_id`. Only print-on-demand products
+can be carried: Studio won't list self-held stock.
 
 ## Writing package code
 
