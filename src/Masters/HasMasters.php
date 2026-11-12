@@ -47,6 +47,31 @@ trait HasMasters
         ];
     }
 
+    /**
+     * The kind of work this owner's masters are (a MasterCategories key), for
+     * browsing the library by category. Default: its `master_category` column.
+     * Apparel files are always filed under apparel (see MasterFile::category()).
+     */
+    public function masterCategory(): ?string
+    {
+        $key = $this->getAttributes()['master_category'] ?? null;
+
+        return MasterCategories::valid($key) ? $key : null;
+    }
+
+    /**
+     * What Studio's masters library shows for this owner, beyond the naming:
+     * studio_client_id, preview_url (a public web image), admin_url, url.
+     *
+     * @return array{studio_client_id?: int|null, preview_url?: string|null, admin_url?: string|null, url?: string|null}
+     */
+    public function masterIndexDetails(): array
+    {
+        $id = $this->getAttributes()['studio_client_id'] ?? null;
+
+        return ['studio_client_id' => $id ? (int) $id : null];
+    }
+
     /** @return MorphMany<MasterFile, $this> */
     public function masterFiles(): MorphMany
     {

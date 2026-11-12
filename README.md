@@ -150,6 +150,17 @@ copy), or a commission's `onesheet`, `teaser`, `alt`, `character`, `festival`.
   into that layout (a server-side copy on R2/Spaces) and repoints every record
   using them. Dry run unless `--write`.
 
+- Each master has a category (`Masters\MasterCategories`: movie posters,
+  album art, game art, apparel and so on). Apparel files are always apparel;
+  otherwise the owner's `masterCategory()` says (default: its
+  `master_category` column), else `other`. `MasterCategories::guess($text)`
+  turns free text like a medium into one.
+- `store:report-masters` (hourly, with the catalogue and a store key) sends
+  every master to Studio's masters library: what it is, size, pixels,
+  checksum, plus the owner's `masterIndexDetails()` (studio_client_id,
+  preview_url, admin_url, url). Studio downloads through
+  `GET /api/store/master-file/{id}`, which answers with a 30-minute signed link.
+
 Disks, in `config/filesystems.php`:
 
 ```php

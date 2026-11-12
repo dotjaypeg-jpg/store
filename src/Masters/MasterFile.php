@@ -97,6 +97,22 @@ class MasterFile extends Model
         }
     }
 
+    /** Roles that are always filed under apparel, whatever the owner is. */
+    public const APPAREL_ROLES = ['apparel', 'apparel_print'];
+
+    /** The library category: apparel for garment files, else the owner's, else other. */
+    public function category(): string
+    {
+        if (in_array($this->role, self::APPAREL_ROLES, true)) {
+            return 'apparel';
+        }
+
+        $owner = $this->owner;
+        $category = $owner && method_exists($owner, 'masterCategory') ? $owner->masterCategory() : null;
+
+        return MasterCategories::valid($category) ? $category : 'other';
+    }
+
     public function roleLabel(): string
     {
         return self::ROLES[$this->role] ?? ucfirst(str_replace('_', ' ', $this->role));
