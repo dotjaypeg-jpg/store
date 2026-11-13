@@ -124,6 +124,10 @@ return [
         // Run masters:rename --write nightly (03:15), so files follow edits to
         // a title, client or year. Safe to repeat: named files are skipped.
         'auto_rename' => true,
+        // fn (string $target): ?Model  what a direct upload from Studio's master
+        // inbox belongs to (chargefield: a portfolio project's slug -> its
+        // commission). Null = direct uploads are off.
+        'upload_target' => null,
     ],
 
     /*
