@@ -14,6 +14,7 @@ use Chargefield\Store\Console\SyncBlanks;
 use Chargefield\Store\Console\SyncCarried;
 use Chargefield\Store\Console\VerifyMasters;
 use Chargefield\Store\Http\MasterFileController;
+use Chargefield\Store\Http\MasterUploadController;
 use Chargefield\Store\Http\PrintFileController;
 use Chargefield\Store\Masters\MasterReport;
 use Chargefield\Store\Sales\StudioSales;
@@ -52,6 +53,11 @@ class StoreServiceProvider extends ServiceProvider
                 ->whereNumber('id')
                 ->middleware('throttle:120,1')
                 ->name('store.master-file');
+            // Masters uploaded straight to the bucket from Studio's master inbox.
+            Route::post('/api/store/master-uploads', [MasterUploadController::class, 'start'])
+                ->middleware('throttle:120,1')->name('store.master-uploads.start');
+            Route::post('/api/store/master-uploads/complete', [MasterUploadController::class, 'complete'])
+                ->middleware('throttle:120,1')->name('store.master-uploads.complete');
         }
 
         if ($this->app->runningInConsole()) {

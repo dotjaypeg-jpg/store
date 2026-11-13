@@ -146,6 +146,12 @@ copy), or a commission's `onesheet`, `teaser`, `alt`, `character`, `festival`.
   Deleting a row deletes its file unless another row uses the same path.
 - `php artisan masters:verify` checks every file is on its disk and fills in
   missing sizes; `--checksums` also reads files with no sha256 yet.
+- Direct uploads (Studio's master inbox): `POST /api/store/master-uploads`
+  answers with a 2-hour signed PUT link for the master's proper name, and
+  `POST /api/store/master-uploads/complete` checks the file arrived whole and
+  records it. The site says what a target key means with
+  `store.masters.upload_target`; a file already on that owner (same sha256)
+  is reported as a duplicate instead.
 - `php artisan masters:rename [--write]` moves files saved under older names
   into that layout (a server-side copy on R2/Spaces) and repoints every record
   using them. Dry run unless `--write`. It runs nightly at 03:15 (set
