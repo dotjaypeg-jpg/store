@@ -31,6 +31,14 @@ class MasterReport
         $naming = $owner instanceof Model && method_exists($owner, 'masterNaming') ? $owner->masterNaming() : [];
         $details = $owner instanceof Model && method_exists($owner, 'masterIndexDetails') ? $owner->masterIndexDetails() : [];
 
+        // The preview is per-Work by default (masterIndexDetails), but an owner can
+        // vary it by file — e.g. a Work whose poster master shows the flat artwork
+        // while its apparel masters show a thumbnail of the print, not the garment
+        // mockup. Owners that don't define the hook keep the per-Work preview.
+        $preview = $owner instanceof Model && method_exists($owner, 'masterPreviewUrl')
+            ? $owner->masterPreviewUrl($file)
+            : ($details['preview_url'] ?? null);
+
         return [
             'id' => $file->id,
             'role' => $file->role,
@@ -49,7 +57,7 @@ class MasterReport
             'checksum' => $file->checksum,
             'width' => $file->width,
             'height' => $file->height,
-            'preview_url' => $details['preview_url'] ?? null,
+            'preview_url' => $preview,
             'admin_url' => $details['admin_url'] ?? null,
             'url' => $details['url'] ?? null,
             'updated_at' => $file->updated_at?->toIso8601String(),
