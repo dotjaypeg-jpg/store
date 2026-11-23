@@ -196,6 +196,16 @@ class OrderResource extends Resource
                         'label-'.$record->order_number.'.'.strtolower($fulfillment->label_format ?: 'pdf'),
                     );
                 }),
+            Action::make('printMailingSlip')
+                ->label('Print mailing slip')
+                ->icon('heroicon-o-document-text')
+                ->color('gray')
+                // A stamp-and-mail slip (return address + ship-to) for lettermail —
+                // no carrier account needed. Shown when the host app provides the URL.
+                ->visible(fn (Order $record) => filled($record->shipping_address)
+                    && filled(Store::mailingSlipUrl($record)))
+                ->url(fn (Order $record) => Store::mailingSlipUrl($record))
+                ->openUrlInNewTab(),
         ];
     }
 
