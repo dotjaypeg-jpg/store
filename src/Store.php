@@ -2,6 +2,7 @@
 
 namespace Chargefield\Store;
 
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Storage;
 
 /** Config-driven lookups shared by the store models and resources. */
@@ -37,5 +38,17 @@ class Store
     public static function currency(): string
     {
         return (string) config('store.currency', 'CAD');
+    }
+
+    /**
+     * The printable mailing-slip URL for an order, via the host app's
+     * store.mailing_slip.url resolver. Null when no resolver is configured (the
+     * admin "Print mailing slip" action then stays hidden).
+     */
+    public static function mailingSlipUrl(Model $order): ?string
+    {
+        $resolver = config('store.mailing_slip.url');
+
+        return $resolver ? call_user_func($resolver, $order) : null;
     }
 }
