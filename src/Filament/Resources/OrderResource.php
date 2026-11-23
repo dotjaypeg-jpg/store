@@ -3,15 +3,21 @@
 namespace Chargefield\Store\Filament\Resources;
 
 use Chargefield\Store\Filament\Resources\OrderResource\Pages;
+use Chargefield\Store\Fulfillment\ShipmentRecorder;
 use Chargefield\Store\Store;
+use Filament\Actions\Action;
+use Filament\Forms\Components\Select;
+use Filament\Forms\Components\TextInput;
 use Filament\Forms\Form;
 use Filament\Infolists\Components\RepeatableEntry;
 use Filament\Infolists\Components\Section;
 use Filament\Infolists\Components\TextEntry;
 use Filament\Infolists\Infolist;
+use Filament\Notifications\Notification;
 use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
+use Illuminate\Database\Eloquent\Model;
 
 class OrderResource extends Resource
 {
@@ -98,7 +104,80 @@ class OrderResource extends Resource
             ])
             ->actions([
                 Tables\Actions\ViewAction::make(),
+                ...static::orderActions(),
             ]);
+    }
+
+    /**
+     * Admin fulfilment actions, shared by the list row and the view-page header.
+     * "Mark shipped" records a shipment (status, tracking, shipped_at) and — via a
+     * bound ShipmentNotifier — emails the buyer once. Aimed at self-shipped
+     * ('manual') orders, which no provider webhook ever moves along.
+     *
+     * @return array<int, Tables\Actions\Action|Action>
+     */
+    public static function orderActions(bool $page = false): array
+    {
+        $make = fn (string $name) => $page ? Action::make($name) : Tables\Actions\Action::make($name);
+
+        return [
+            $make('markShipped')
+                ->label('Mark shipped')
+                ->icon('heroicon-o-truck')
+                ->color('success')
+                ->visible(fn (Model $record) => $record->isPaid() && static::shippableProviders($record) !== [])
+                ->form([
+                    Select::make('provider')
+                        ->label('Fulfilment')
+                        ->options(fn (Model $record) => static::shippableProviders($record))
+                        ->default(fn (Model $record) => array_key_first(static::shippableProviders($record)))
+                        // One candidate → no need to choose; the default is submitted.
+                        ->visible(fn (Model $record) => count(static::shippableProviders($record)) > 1)
+                        ->required(),
+                    TextInput::make('tracking_number')->label('Tracking number')->maxLength(255),
+                    TextInput::make('tracking_url')->label('Tracking URL')->url()->maxLength(2048)
+                        ->helperText('Optional — a link the buyer can follow to track the parcel.'),
+                ])
+                ->modalSubmitActionLabel('Mark shipped')
+                ->action(function (Model $record, array $data) {
+                    $provider = $data['provider'] ?? array_key_first(static::shippableProviders($record));
+                    app(ShipmentRecorder::class)->record(
+                        $record,
+                        (string) $provider,
+                        filled($data['tracking_number'] ?? null) ? $data['tracking_number'] : null,
+                        filled($data['tracking_url'] ?? null) ? $data['tracking_url'] : null,
+                    );
+                    Notification::make()
+                        ->title('Marked shipped'.(filled($record->email) ? ' — buyer emailed' : ''))
+                        ->success()
+                        ->send();
+                }),
+        ];
+    }
+
+    /**
+     * Providers on this order that can still be marked shipped: each fulfilment
+     * not already shipped/delivered, keyed provider => label. When the order has no
+     * fulfilment rows at all, offers a self-shipped ('manual') record. Empty when
+     * every fulfilment has shipped (so the action hides).
+     *
+     * @return array<string, string>
+     */
+    protected static function shippableProviders(Model $record): array
+    {
+        $providers = $record->fulfillments()
+            ->whereNotIn('status', ['shipped', 'delivered'])
+            ->orderBy('provider')
+            ->pluck('provider')
+            ->all();
+
+        if ($providers === [] && ! $record->fulfillments()->exists()) {
+            $providers = ['manual'];
+        }
+
+        return collect($providers)
+            ->mapWithKeys(fn (string $p) => [$p => ucfirst($p).($p === 'manual' ? ' (you ship)' : '')])
+            ->all();
     }
 
     public static function infolist(Infolist $infolist): Infolist
@@ -172,10 +251,12 @@ class OrderResource extends Resource
                             'draft' => 'gray',
                             default => 'warning',
                         }),
+                        TextEntry::make('shipped_at')->label('Shipped')->dateTime('M j, Y')->placeholder('—'),
                         TextEntry::make('provider_order_id')->label('Provider order')->placeholder('—'),
-                        TextEntry::make('tracking_url')->label('Tracking')->placeholder('—')
+                        TextEntry::make('tracking_number')->label('Tracking no.')->placeholder('—')->copyable(),
+                        TextEntry::make('tracking_url')->label('Tracking link')->placeholder('—')
                             ->url(fn ($state) => $state ?: null, true),
-                    ])->columns(4),
+                    ])->columns(3),
                 ]),
 
             Section::make('Shipping address')

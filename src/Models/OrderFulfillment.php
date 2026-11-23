@@ -15,6 +15,7 @@ use Illuminate\Support\Carbon;
  * @property string|null $provider_order_id
  * @property string|null $tracking_number
  * @property string|null $tracking_url
+ * @property Carbon|null $shipped_at
  * @property Carbon|null $shipped_notified_at
  * @property array<string, mixed>|null $response
  * @property Carbon|null $created_at
@@ -29,6 +30,7 @@ class OrderFulfillment extends Model
 
     protected $casts = [
         'response' => 'array',
+        'shipped_at' => 'datetime',
         'shipped_notified_at' => 'datetime',
     ];
 
