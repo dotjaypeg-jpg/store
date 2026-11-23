@@ -2,8 +2,10 @@
 
 namespace Chargefield\Store\Filament\Resources;
 
+use Chargefield\Store\Contracts\LabelPurchaser;
 use Chargefield\Store\Filament\Resources\OrderResource\Pages;
 use Chargefield\Store\Fulfillment\ShipmentRecorder;
+use Chargefield\Store\Models\Order;
 use Chargefield\Store\Store;
 use Filament\Actions\Action;
 use Filament\Forms\Components\Select;
@@ -17,7 +19,7 @@ use Filament\Notifications\Notification;
 use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
-use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\Storage;
 
 class OrderResource extends Resource
 {
@@ -104,42 +106,40 @@ class OrderResource extends Resource
             ])
             ->actions([
                 Tables\Actions\ViewAction::make(),
-                ...static::orderActions(),
             ]);
     }
 
     /**
-     * Admin fulfilment actions, shared by the list row and the view-page header.
-     * "Mark shipped" records a shipment (status, tracking, shipped_at) and — via a
-     * bound ShipmentNotifier — emails the buyer once. Aimed at self-shipped
-     * ('manual') orders, which no provider webhook ever moves along.
+     * Fulfilment actions for the order view-page header. "Mark shipped" records a
+     * shipment (status, tracking, shipped_at) and — via a bound ShipmentNotifier —
+     * emails the buyer once; "Buy & print label" creates a real carrier shipment.
+     * Aimed at self-shipped ('manual') orders, which no provider webhook ever
+     * moves along.
      *
-     * @return array<int, Tables\Actions\Action|Action>
+     * @return array<int, Action>
      */
-    public static function orderActions(bool $page = false): array
+    public static function orderActions(): array
     {
-        $make = fn (string $name) => $page ? Action::make($name) : Tables\Actions\Action::make($name);
-
         return [
-            $make('markShipped')
+            Action::make('markShipped')
                 ->label('Mark shipped')
                 ->icon('heroicon-o-truck')
                 ->color('success')
-                ->visible(fn (Model $record) => $record->isPaid() && static::shippableProviders($record) !== [])
+                ->visible(fn (Order $record) => $record->isPaid() && static::shippableProviders($record) !== [])
                 ->form([
                     Select::make('provider')
                         ->label('Fulfilment')
-                        ->options(fn (Model $record) => static::shippableProviders($record))
-                        ->default(fn (Model $record) => array_key_first(static::shippableProviders($record)))
+                        ->options(fn (Order $record) => static::shippableProviders($record))
+                        ->default(fn (Order $record) => array_key_first(static::shippableProviders($record)))
                         // One candidate → no need to choose; the default is submitted.
-                        ->visible(fn (Model $record) => count(static::shippableProviders($record)) > 1)
+                        ->visible(fn (Order $record) => count(static::shippableProviders($record)) > 1)
                         ->required(),
                     TextInput::make('tracking_number')->label('Tracking number')->maxLength(255),
                     TextInput::make('tracking_url')->label('Tracking URL')->url()->maxLength(2048)
                         ->helperText('Optional — a link the buyer can follow to track the parcel.'),
                 ])
                 ->modalSubmitActionLabel('Mark shipped')
-                ->action(function (Model $record, array $data) {
+                ->action(function (Order $record, array $data) {
                     $provider = $data['provider'] ?? array_key_first(static::shippableProviders($record));
                     app(ShipmentRecorder::class)->record(
                         $record,
@@ -152,6 +152,50 @@ class OrderResource extends Resource
                         ->success()
                         ->send();
                 }),
+            Action::make('buyLabel')
+                ->label('Buy & print label')
+                ->icon('heroicon-o-printer')
+                ->color('primary')
+                // Only when the host app binds a purchaser and the order has an
+                // unshipped self-shipped ('manual') parcel to label.
+                ->visible(fn (Order $record) => app()->bound(LabelPurchaser::class)
+                    && $record->isPaid()
+                    && array_key_exists('manual', static::shippableProviders($record)))
+                ->requiresConfirmation()
+                ->modalHeading('Buy a shipping label')
+                ->modalDescription('Creates a real shipment with the carrier, buys the label, and marks the order shipped. This charges your carrier account.')
+                ->modalSubmitActionLabel('Buy label')
+                ->action(function (Order $record) {
+                    try {
+                        app(LabelPurchaser::class)->purchase($record, 'manual');
+                    } catch (\Throwable $e) {
+                        report($e);
+                        Notification::make()->title('Could not buy the label')->body($e->getMessage())->danger()->persistent()->send();
+
+                        return;
+                    }
+                    Notification::make()->title('Label bought — order marked shipped')->success()->send();
+                }),
+            Action::make('downloadLabel')
+                ->label('Download label')
+                ->icon('heroicon-o-arrow-down-tray')
+                ->color('gray')
+                ->visible(fn (Order $record) => $record->fulfillments()->whereNotNull('label_path')->exists())
+                ->action(function (Order $record) {
+                    $disk = Storage::disk((string) config('store.labels.disk', 'local'));
+                    $fulfillment = $record->fulfillments()->whereNotNull('label_path')->latest('id')->first();
+
+                    if (! $fulfillment || ! $disk->exists((string) $fulfillment->label_path)) {
+                        Notification::make()->title('Label file not found')->danger()->send();
+
+                        return null;
+                    }
+
+                    return $disk->download(
+                        (string) $fulfillment->label_path,
+                        'label-'.$record->order_number.'.'.strtolower($fulfillment->label_format ?: 'pdf'),
+                    );
+                }),
         ];
     }
 
@@ -163,7 +207,7 @@ class OrderResource extends Resource
      *
      * @return array<string, string>
      */
-    protected static function shippableProviders(Model $record): array
+    protected static function shippableProviders(Order $record): array
     {
         $providers = $record->fulfillments()
             ->whereNotIn('status', ['shipped', 'delivered'])
@@ -256,6 +300,10 @@ class OrderResource extends Resource
                         TextEntry::make('tracking_number')->label('Tracking no.')->placeholder('—')->copyable(),
                         TextEntry::make('tracking_url')->label('Tracking link')->placeholder('—')
                             ->url(fn ($state) => $state ?: null, true),
+                        TextEntry::make('carrier')->label('Label')->placeholder('—')
+                            ->formatStateUsing(fn ($state, $record) => $state
+                                ? ucfirst((string) $state).($record->label_cost ? ' · $'.$record->label_cost : '')
+                                : '—'),
                     ])->columns(3),
                 ]),
 

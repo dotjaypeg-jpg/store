@@ -145,4 +145,18 @@ return [
         'models' => [],
     ],
 
+    /*
+    |--------------------------------------------------------------------------
+    | Shipping labels
+    |--------------------------------------------------------------------------
+    |
+    | Where bought shipping-label PDFs live. MUST be a private disk — a label
+    | carries the buyer's address. The host app writes labels here when it buys
+    | one; the admin "Download label" action streams them back.
+    |
+    */
+    'labels' => [
+        'disk' => env('STORE_LABELS_DISK', 'local'),
+    ],
+
 ];
