@@ -11,6 +11,6 @@ class ViewOrder extends ViewRecord
 
     protected function getHeaderActions(): array
     {
-        return OrderResource::orderActions(page: true);
+        return OrderResource::orderActions();
     }
 }
