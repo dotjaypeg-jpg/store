@@ -37,6 +37,13 @@ class StoreServiceProvider extends ServiceProvider
 
         $this->loadMigrationsFrom(__DIR__.'/../database/migrations');
 
+        // Package mail views (e.g. the new-order alert). A host app can override
+        // one by publishing to resources/views/vendor/chargefield-store/....
+        $this->loadViewsFrom(__DIR__.'/../resources/views', 'chargefield-store');
+        $this->publishes([
+            __DIR__.'/../resources/views' => $this->app->resourcePath('views/vendor/chargefield-store'),
+        ], 'store-views');
+
         // Studio fetches this store's print files here when another store carries
         // one of its products. Bearer-authed; only with print_file set.
         if (filled(config('store.catalog.print_file')) && ! $this->app->routesAreCached()) {
