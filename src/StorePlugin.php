@@ -2,6 +2,7 @@
 
 namespace Chargefield\Store;
 
+use Chargefield\Store\Filament\Resources\BlankResource;
 use Chargefield\Store\Filament\Resources\OrderResource;
 use Chargefield\Store\Filament\Resources\PricingRuleResource;
 use Chargefield\Store\Filament\Resources\StockistResource;
@@ -30,6 +31,7 @@ class StorePlugin implements Plugin
         $panel->resources([
             OrderResource::class,
             PricingRuleResource::class,
+            BlankResource::class,
             StockistResource::class,
         ]);
     }

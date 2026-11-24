@@ -18,6 +18,7 @@ secrets and client data.
 | `OrderItem` | `order_items` | shown inside an order |
 | `OrderFulfillment` | `order_fulfillments` | shown inside an order |
 | `PricingRule` | `pricing_rules` | Store → Pricing |
+| `Blank` | `blanks` | Store → Stock / blanks |
 | `Stockist` | `stockists` | Portfolio → Stockists |
 | `Masters\MasterFile` | `master_files` | each site's own screens (see Masters) |
 
@@ -69,6 +70,26 @@ A site adds its own extras on its subclass (johngodfrey's `Stockist` adds
 | `catalog.product_snapshot` | `null` | one product's snapshot for Studio's index |
 | `catalog.carry` / `catalog.print_file` | `null` | carrying products across stores (see below) |
 | `studio_clients.models` | `[]` | models `studio:link-clients` matches to Studio clients by name |
+
+## Blanks (shared stock: material + care)
+
+A `Blank` is a reusable stock definition (a tee, a paper stock) that holds the
+material blurb, wash-care and size guide once. Products point at one
+(`products.blank_id`) or inherit the category default (`Blank::defaultFor()`), so
+the storefront shows the same spec + care for the same physical blank on every
+site — no re-typing the same boring copy per site.
+
+- `Chargefield\Store\Models\Blank` — `name`, `category`, `is_default`, `blurb`
+  (material), `care` (`[{title, body}]`), `size_guide` (`[{label, …}]`), plus
+  `catalog_id` for Studio sync. Keep a thin `App\Models\Blank extends …\Blank`.
+- Migrations create `blanks` and add `products.blank_id` — both guarded, so a
+  site that already had its own blanks table (johngodfrey) keeps it and just gets
+  any missing shared columns.
+- `php artisan store:seed-blanks` upserts the canonical set
+  (`Catalog\StandardBlanks`) — the same tee / print / poster / sticker stock with
+  identical material + care on every site. A site can still edit a row, and a
+  wired-up Studio catalogue (below) overrides with the master copy.
+- Admin: Store → Stock / blanks (`BlankResource`), registered by `StorePlugin`.
 
 ## Shared blanks (Studio catalogue)
 

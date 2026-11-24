@@ -52,6 +52,7 @@ return [
     'navigation' => [
         'orders' => 'Store',
         'pricing' => 'Store',
+        'blanks' => 'Store',
         'stockists' => 'Portfolio',
     ],
 
